@@ -1,7 +1,7 @@
 # StormChaser
 DEMO 3D Double-Helix localization software 
 
-StormChaser is based on a c++ SM localization routine that has been converted in a exectutable standalone .mex file.
+StormChaser is based on a c++ SM localization routine converted in a exectutable standalone .mex file.
 Here only the .mex file is provided.
 
 To run the DEMO:
