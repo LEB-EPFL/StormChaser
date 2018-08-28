@@ -32,9 +32,12 @@
 % 3) first rejection and image segmentation preparetion for step 4)
 %   (lobePairRejection.m getParamLocInitGuess.m)
 % 4) molecule localization via MLE fitting (MLElocalization.m)
-% 5) Result localizations displaying
-% 6) Wobble correction
-% 7) Result saving
+% 5) filtering
+% 6) Correction for spherical aberration
+% 7) Intensity Conversion from ADU to photons
+% 8) Result localizations displaying
+% 9) Wobble correction
+% 10) Result saving
 % _______________________________________________________________________
 % 
 % OUTPUT:
@@ -119,8 +122,13 @@
 clc
 clear all
 
+                            %**************************
+                            %      START INPUTS       *
+                            %**************************
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Step 0a) Define parameters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Do ctrl + enter after positiong the cursor here
 
 % Find the warning ID, save the current warning state
@@ -309,7 +317,15 @@ plotCheckLSCal = 0;
 figDbgCropCal = 0; % 0 do not show fig
 
 
+                            %**************************
+                            %        END INPUTS       *
+                            %**************************
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Step 0b): Preliminary test: Grab the possible thresholds for the calibration beads: first thresholds guess 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Do ctrl + enter after positiong the cursor here
 
 [clSeedThr, clPixelThr] = getThrGuess(fileData, 2500, 0, numFrmFilt);
@@ -322,7 +338,9 @@ disp([clSeedThr, clPixelThr])
 disp('Guessed clThrCal and seedThrCal:')
 disp([clSeedThrCal, clPixelThrCal])
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Step 0c): Preliminary test: choose the right thresholds for the calibration beads
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Do ctrl + enter after positiong the cursor here
 
 [testCalList] = CM_forDH( calFileImg, calFileDark, fileOutCalDirFileName,...
@@ -356,8 +374,10 @@ CM_forDH( calFileImg, calFileDark, fileOutCalDirFileName,...
                               glbGainCal, 4, 0, 0, numFrmFiltCal, repNumCal); 
                           % Please check the output :
                           % CalibLocTest_DBG_Stack_HiRes_RGBA.tif
-                          
-%% Step 0d): Test to choose the right thresholds for the dataset                          
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Step 0d): Test to choose the right thresholds for the dataset
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Do ctrl + enter after positiong the cursor here                    
 [testDataList] = CM_forDH( fileData, fileDark, fileOutLocCMDirFileName,...
                               fileBiasScale, fileNoiseScale, fileGainScale, ...
@@ -378,8 +398,9 @@ CM_forDH( fileData, fileDark, fileOutLocCMDirFileName,...
                           % DatasetLocTest_DBG_Stack_HiRes_RGBA.tif
 
 
-%% Analyse the dataset to extract the localization
-% Step 1), 2), 3) and 4)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Step 1), 2), 3) and 4): Analyse the dataset to extract the localization
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Do ctrl + enter after positiong the cursor here
 
 [locList, locLSListCal, xInterpFunc, yInterpFunc, distInterpFunc] = fRapidDH( fileData, fileDark, fileOutDir, fileOutLocCMDir,...
@@ -407,8 +428,10 @@ disp('Final Calibration Localization List: locLSListCal.m')
 disp('[frm, uxA [nm], uyA [nm], uxB [nm], uyB [nm], sgmA [nm], sgmB [nm], I0A, I0B, bkg, corr,  xC, yC, zC, ang, dist, varXY, varAng, exitFITflag]')
 disp('[1  , 2       , 3       , 4       , 5       , 6        , 7        , 8  , 9  , 10 , 11  , 12 , 13, 14, 15 , 16  , 17   , 18    , 19         ]')         
 
-%% Final filtering
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Step 5) Final filtering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Do ctrl + enter after positiong the cursor here
 % Grab the sigma range of the two lobes inside the calibration list
 sgmMin = min([min(locLSListCal(:, 6)), min(locLSListCal(:, 7))]);
 sgmMax = max([max(locLSListCal(:, 6)), max(locLSListCal(:, 7))]);
@@ -465,7 +488,12 @@ disp('  ');
 disp('Post-processing:')
 disp('1) Final localization list after rejection saved in: locListFinal.m'); 
 
-%% Correction for spherical aberration (aqueous sample + oil immersion objective)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Step 6): Correction for spherical aberration (aqueous sample + oil immersion objective)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Do ctrl + enter after positiong the cursor here
+
 % The index mismatch causes the apparent z position of the molecule to
 % shift away from the coverglass due to the bending of light rays that
 % occurs at the interface of two different material
@@ -473,7 +501,9 @@ disp('1) Final localization list after rejection saved in: locListFinal.m');
 k = RIsample/RIcover; 
 locListFinal(:, 14) = locListFinal(:, 14)*k;
 
-%% Intensity Conversion from ADU to photons
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Step 7) Intensity Conversion from ADU to photons
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 IA = locListFinal(:, 8);
 IB = locListFinal(:, 9);
 smgA = locListFinal(:, 6)/pixSize;
@@ -483,7 +513,10 @@ locListFinal(:, 24) = (IA.*2.*pi.*smgA.^2 + IB.*2.*pi.*smgB.^2)./TOTgain;
 disp('2) Conversion from ADU to photons');
 disp('3) Molecule Intensity in col 24');
 
- %% Wobble correction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Step 8) Wobble correction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 deltaX = xInterpFunc(locListFinal(:, 14)) - xInterpFunc(0);
 deltaY = yInterpFunc(locListFinal(:, 14)) - yInterpFunc(0);
 
@@ -492,8 +525,9 @@ locListFinal(:, 13) = locListFinal(:, 13) - deltaY;
 
 disp('4) Wobble correction done.');
 
-%% Rendering: plot 2D and 3D hist
-% Step 5)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Step 9) Rendering: plot 2D and 3D hist
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 1.	Install dipimage toolbox (http://www.diplib.org/)
 % 2.	Initialize it.
@@ -542,9 +576,10 @@ dipshow(hist2, gaussf(imageRec, [3 3]), [0 0.5])
 diptruesize(50)
 set(hist2, 'name', 'Gaussian blurred image (50%)', 'numbertitle', 'off')
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Step10) Save loc in a csv, tab sep, ascii file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Save loc in a csv, tab sep, ascii file
-% Step 6)
 disp('...writing data...')
 
 % fileOutDir
