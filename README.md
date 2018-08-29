@@ -38,7 +38,7 @@ fRapidDH.m is the main function.
    and lobes pairing (CM_forDH)
 3) first rejection and image segmentation preparetion for step 4)
   (lobePairRejection.m getParamLocInitGuess.m)
-4) molecule localization via MLE fitting (MLElocalization.m)
+4) molecule localization via LS or MLE multi-emitter fitting (MLElocalization.m)
 5) filtering
 6) Correction for spherical aberration
 7) Intensity Conversion from ADU to photons
