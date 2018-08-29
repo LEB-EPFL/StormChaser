@@ -21,7 +21,7 @@ Anna Archetti anna.archetti@gmail.com
 # Internal Workflow
 fRapidDH.m is the main function.
 
-### Main software preliminary steps 0):
+### Main software preliminary steps:
 a) Parameters definition; 
 b) Find first guess for the seed threshold and the cluster threshold
     (the cluster thr: intensity value of the possible max peak 
